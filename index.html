@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>StrateGo + Golondrina (prototipo)</title>
+<style>
+:root{--page:#f1f1f1;--panel:#fff;--head:#f7f7f7;--line:#dedede;--line2:#c6c6c6;--text:#212529;--muted:#666b70;--green:#128a12;--title:#1a9e1a;--blue:#1b6fd1;--b-gray:#6c757d;--b-green:#198754;--b-yellow:#f5c211;--b-blue:#0d6efd;--alto:#128a12;--medio:#b77a00;--bajo:#c0392b;--nulo:#8d9296;--gol:#0e6a86;--gol-bg:#eaf4f7;--amenaza:#b3261e;--amenaza-bg:#fbeceb;--oport:#128a12;--oport-bg:#e9f5e9;--shadow:0 2px 10px rgba(0,0,0,.08);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--page:#141619;--panel:#1d2024;--head:#24282d;--line:#343a40;--line2:#4b5259;--text:#e7e9ec;--muted:#a4abb3;--green:#2a8f36;--title:#46c14f;--blue:#6aa6f2;--alto:#57c465;--medio:#e0a93a;--bajo:#e8766d;--nulo:#7d858d;--gol:#63c6e2;--gol-bg:#15303a;--amenaza:#e8766d;--amenaza-bg:#3a1e1c;--oport:#57c465;--oport-bg:#1b3320;--shadow:0 2px 10px rgba(0,0,0,.4);color-scheme:dark}}
+:root[data-theme="dark"]{--page:#141619;--panel:#1d2024;--head:#24282d;--line:#343a40;--line2:#4b5259;--text:#e7e9ec;--muted:#a4abb3;--green:#2a8f36;--title:#46c14f;--blue:#6aa6f2;--alto:#57c465;--medio:#e0a93a;--bajo:#e8766d;--nulo:#7d858d;--gol:#63c6e2;--gol-bg:#15303a;--amenaza:#e8766d;--amenaza-bg:#3a1e1c;--oport:#57c465;--oport-bg:#1b3320;--shadow:0 2px 10px rgba(0,0,0,.4);color-scheme:dark}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--text);font-family:Arial,"Helvetica Neue",Helvetica,sans-serif;font-size:15px;line-height:1.45}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+svg.ic{width:20px;height:20px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+svg.gol-ic{width:18px;height:18px;flex:none;fill:currentColor}
+.muted{color:var(--muted)}
+h3{font-size:19px;font-weight:700;margin:0 0 4px}
+h4{font-size:17px;margin:6px 0 4px}
+
+.top{display:flex;align-items:center;gap:32px;background:var(--panel);padding:10px 24px 14px;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;align-items:center;width:200px;line-height:1}
+.brand-name{font-size:40px;font-weight:700;color:var(--title);letter-spacing:1px}
+.brand-sub{font-size:13px;color:var(--muted);margin-top:5px}
+.titles h1{margin:0;font-size:38px;font-weight:400;color:var(--title);line-height:1.15}
+.user{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:19px;margin-top:4px}
+.demo-flag{margin-left:auto;display:flex;align-items:center;gap:10px;border:1px solid var(--gol);color:var(--gol);background:var(--gol-bg);border-radius:10px;padding:8px 14px;font-size:14px;line-height:1.3}
+.demo-flag small{color:var(--muted)}
+
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:20px;padding:18px 20px 48px 0}
+.side{background:var(--panel);border-radius:0 0 18px 0;box-shadow:var(--shadow);padding:10px 0 22px;align-self:start}
+.side button{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;padding:13px 16px;color:var(--muted);font-size:16px;text-align:left}
+.side button:hover,.side button.on{color:var(--text);background:var(--head)}
+.side button.gol{color:var(--gol)}
+.side button.gol.on{background:var(--gol-bg)}
+.side .count{margin-left:auto;background:var(--amenaza);color:#fff;border-radius:10px;font-size:12px;padding:1px 8px}
+.side hr{border:0;border-top:1px solid var(--line);margin:8px 18px}
+.side .sec{font-size:13px;color:var(--gol);padding:6px 18px 2px;display:flex;gap:6px;align-items:center}
+
+.crumbs{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:10px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:17px;margin-bottom:24px}
+.crumbs button{background:none;border:0;padding:0;display:inline-flex;gap:6px;align-items:center}
+.crumbs .sep,.crumbs .cur{color:var(--muted)}
+.crumbs .cur{display:inline-flex;gap:6px;align-items:center}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:4px}
+.panel-head{background:var(--head);border-bottom:1px solid var(--line);padding:14px 24px;font-size:23px;color:var(--muted);display:flex;align-items:center;gap:10px}
+.qmark{width:34px;height:34px;border:2px solid var(--blue);color:var(--blue);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+.panel-body{padding:22px 24px 26px}
+
+.filters{display:grid;grid-template-columns:minmax(180px,2.4fr) minmax(150px,1fr) minmax(110px,.7fr) minmax(90px,.55fr) auto;gap:6px;align-items:center}
+.ctl{height:38px;border:1px solid var(--line2);border-radius:4px;background:var(--panel);padding:0 10px;font-size:16px;min-width:0;width:100%}
+.btn-pill{height:38px;border-radius:19px;border:1px solid var(--line2);background:var(--panel);padding:0 34px;color:var(--muted);font-size:17px;white-space:nowrap}
+.btn-pill:hover{border-color:var(--muted);color:var(--text)}
+.btn-pill.blue{border-color:var(--blue);color:var(--blue)}
+.gfilters{margin-top:12px;border:1px solid var(--gol);background:var(--gol-bg);border-radius:6px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end}
+.gfilters .gtitle{display:flex;align-items:center;gap:6px;color:var(--gol);font-weight:700;font-size:15px;align-self:center;margin-right:4px}
+.gfilters label{display:flex;flex-direction:column;font-size:13px;color:var(--gol);gap:3px;min-width:150px;flex:1}
+.gfilters .ctl{font-size:15px;height:34px}
+
+.table-wrap{overflow-x:auto;margin-top:18px}
+table{width:100%;border-collapse:collapse;min-width:1040px}
+th{text-align:left;font-size:15px;padding:8px;border-bottom:1px solid var(--text);vertical-align:bottom;line-height:1.35}
+th.g{color:var(--gol)}
+th.g span{display:flex;gap:5px;align-items:center}
+td{padding:10px 7px;border-bottom:1px solid var(--line);vertical-align:top;font-size:15px}
+td.nm{min-width:210px}
+tr:hover td{background:var(--head)}
+.code{font-weight:700;white-space:nowrap}
+.ej{display:inline-block;font-size:11px;font-weight:400;color:var(--gol);border:1px solid var(--gol);border-radius:8px;padding:0 6px;margin-left:4px;vertical-align:2px}
+.estado{display:inline-block;min-width:112px;text-align:center;background:var(--green);color:#fff;border-radius:12px;padding:6px 10px}
+.estado.form{background:var(--b-blue)}
+.roles{display:grid;grid-template-columns:repeat(2,30px);gap:4px}
+.badge{display:inline-flex;justify-content:center;border-radius:5px;font-size:13px;padding:1px 0;color:#fff}
+.b1{background:var(--b-gray)}.b2{background:var(--b-green)}.b3{background:var(--b-yellow);color:#2b2200}.b4{background:var(--b-blue)}
+.via{display:flex;flex-direction:column;gap:4px;min-width:88px}
+.via b{font-size:17px}
+.via small{font-size:12px}
+.mini{height:6px;background:var(--line);border-radius:3px;overflow:hidden;display:block}
+.mini i{display:block;height:100%}
+.t-alto{color:var(--alto)}.t-medio{color:var(--medio)}.t-bajo{color:var(--bajo)}.t-nulo{color:var(--nulo)}
+.bg-alto{background:var(--alto)}.bg-medio{background:var(--medio)}.bg-bajo{background:var(--bajo)}.bg-nulo{background:var(--nulo)}
+.acnt{white-space:nowrap;display:inline-flex;align-items:center;gap:4px;font-size:14px;border-radius:10px;padding:2px 8px;margin:0 4px 4px 0}
+.acnt.am{background:var(--amenaza-bg);color:var(--amenaza)}
+.acnt.op{background:var(--oport-bg);color:var(--oport)}
+.open-btn{background:none;border:1px solid var(--line2);border-radius:18px;padding:5px 12px;color:var(--blue);display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+
+.det-top{display:flex;flex-wrap:wrap;gap:18px 60px;align-items:flex-start}
+.det-code{font-size:36px;color:var(--title);line-height:1.1}
+.det-prog{display:flex;flex-direction:column;color:var(--green);font-size:17px;max-width:420px}
+.det-prog b{margin-bottom:2px}
+.det-top .btn-pill{margin-left:auto;padding:0 90px}
+.det-name{font-size:19px;margin:10px 0 0}
+.gstrip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:22px 0 6px}
+.gcard{text-align:left;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--gol);border-radius:0;padding:12px 16px;display:flex;flex-direction:column;gap:4px}
+.gcard:hover{background:var(--gol-bg)}
+.gcard-l{display:flex;gap:6px;align-items:center;color:var(--gol);font-size:14px}
+.gcard-v{font-size:34px;font-weight:700;line-height:1.1}
+.gcard-s{font-size:13px;color:var(--muted)}
+.scale{position:relative;display:block;height:8px;background:var(--line);border-radius:4px;margin:4px 0}
+.scale i{display:block;height:100%;border-radius:4px}
+.scale em{position:absolute;top:-3px;width:1px;height:14px;background:var(--muted)}
+
+.tabs{display:flex;flex-wrap:wrap;margin-top:22px;border-bottom:1px solid var(--line)}
+.tab{background:var(--panel);border:1px solid var(--line);border-bottom:0;margin:0 -1px -1px 0;padding:12px 24px;font-size:17px;color:var(--text)}
+.tab[aria-selected="true"]{color:var(--green);font-weight:700;border-bottom:2px solid var(--green)}
+.tab.g{color:var(--gol);display:inline-flex;gap:6px;align-items:center;background:var(--gol-bg)}
+.tab.g[aria-selected="true"]{color:var(--gol);border-bottom:2px solid var(--gol)}
+.tab-body{border:1px solid var(--line);border-top:0;padding:22px;min-height:260px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:16px 40px}
+.field b{display:flex;gap:6px;align-items:center}
+.field b::before{content:"i";width:18px;height:18px;border:1px solid var(--muted);border-radius:50%;font-size:11px;display:inline-flex;align-items:center;justify-content:center;font-weight:400;color:var(--muted);font-style:italic}
+.field div{margin-top:2px}
+.placeholder{color:var(--muted);padding:30px 0;text-align:center}
+
+.ficha{border:1px dashed var(--gol);background:var(--gol-bg);border-radius:6px;padding:12px 14px;margin:14px 0 18px}
+.ficha-h{display:flex;gap:6px;align-items:center;color:var(--gol);font-weight:700;margin-bottom:8px;flex-wrap:wrap}
+.ficha-h span{font-weight:400;font-size:13px}
+.ficha-g{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:12px}
+.lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:3px}
+.chips-s{display:flex;flex-wrap:wrap;gap:4px}
+.chip-s{font-size:13px;border:1px solid var(--line2);background:var(--panel);border-radius:10px;padding:1px 8px}
+.chip-s.ods{border-color:var(--gol);color:var(--gol)}
+
+.gtab-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:flex-end}
+.gtab-head p{margin:0;max-width:640px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line2);background:var(--panel);border-radius:16px;padding:4px 14px;font-size:14px;color:var(--muted)}
+.chip[aria-pressed="true"]{border-color:var(--gol);background:var(--gol-bg);color:var(--gol);font-weight:700}
+.best{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin:4px 0 14px}
+.best .gcard-v{font-size:44px}
+.best .scale{width:260px}
+.match{border:1px solid var(--line);border-radius:6px;padding:14px 16px;margin-bottom:10px;background:var(--panel)}
+.match.rel{border-color:var(--alto);box-shadow:inset 4px 0 0 var(--alto)}
+.match.desc{opacity:.55}
+.match-top{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.match-name strong{font-size:17px}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.tag{font-size:12px;border-radius:10px;padding:1px 8px;border:1px solid var(--line2);color:var(--muted)}
+.tag.esc{border-color:var(--gol);color:var(--gol)}
+.tag.warn{border-color:var(--medio);color:var(--medio)}
+.match-score{min-width:170px;text-align:right}
+.match-score b{font-size:26px}
+.match-score .scale{margin-top:6px}
+.just{margin:10px 0 8px;max-width:820px}
+.match-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sbtn{border:1px solid var(--line2);background:var(--panel);border-radius:4px;padding:5px 12px;font-size:14px}
+.sbtn:hover{border-color:var(--muted)}
+.sbtn.on-rel{border-color:var(--alto);color:var(--alto);font-weight:700}
+.sbtn.on-desc{border-color:var(--bajo);color:var(--bajo);font-weight:700}
+.vig{font-size:13px;color:var(--muted);margin-left:auto}
+.desglose{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;display:grid;gap:7px}
+.crit{display:grid;grid-template-columns:220px 80px 1fr 44px;gap:10px;align-items:center;font-size:14px}
+.crit .scale{margin:0}
+.crit .w{color:var(--muted)}
+.crit-total{font-size:14px;color:var(--muted);margin-top:4px}
+.note{font-size:13px;color:var(--muted);margin-top:14px;max-width:820px}
+
+.alert{border:1px solid var(--line);border-left:5px solid var(--amenaza);background:var(--panel);padding:14px 16px;margin-bottom:12px}
+.alert.op{border-left-color:var(--oport)}
+.alert header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px}
+.atipo{border-radius:10px;padding:1px 10px;font-weight:700;background:var(--amenaza-bg);color:var(--amenaza)}
+.alert.op .atipo{background:var(--oport-bg);color:var(--oport)}
+.acat{border:1px solid var(--line2);border-radius:10px;padding:0 8px;color:var(--muted)}
+.afuente{margin-left:auto;color:var(--muted)}
+.alert p{margin:4px 0 10px;max-width:860px}
+.aimp{display:grid;gap:6px;margin-bottom:10px}
+.aimp-row{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;font-size:15px}
+.lvl{font-weight:700;min-width:62px}
+.plink{background:none;border:0;padding:0;color:var(--blue);text-decoration:underline;text-align:left}
+.nm-link{color:var(--text);text-decoration:none}.nm-link:hover{color:var(--blue);text-decoration:underline}
+.aacc{background:var(--head);border-radius:4px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.aacc b{margin-right:4px}
+.dofa{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:6px 0 18px}
+.dofa > div{border:1px solid var(--line);padding:12px 14px}
+.dofa h4{margin:0 0 6px;display:flex;gap:6px;align-items:center}
+.dofa ul{margin:0;padding-left:18px}
+.dofa li{margin:3px 0}
+
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:10px 0 22px}
+.step{border:1px solid var(--line);border-top:4px solid var(--gol);padding:14px}
+.step .n{color:var(--gol);font-weight:700;font-size:14px}
+.rubric{width:100%;min-width:0;margin:8px 0 18px}
+.rubric td,.rubric th{font-size:15px}
+.sem{display:flex;flex-wrap:wrap;gap:14px;margin:6px 0 18px}
+.sem span{display:flex;gap:6px;align-items:center}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+.disclaimer{border:1px solid var(--medio);background:var(--head);padding:12px 14px;border-radius:4px;max-width:900px}
+.cat-wrap{overflow-x:auto}
+.cat{min-width:900px}
+
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--text);color:var(--panel);padding:10px 18px;border-radius:6px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10;max-width:90vw}
+#toast.show{opacity:1}
+
+@media (max-width:1600px){.col-roles{display:none}table{min-width:860px}td,th{font-size:14px}th.g span{flex-wrap:wrap}.acnt{white-space:normal}.estado{padding:5px 8px}.ver-t{display:none}.open-btn{padding:5px 8px}.acnt{font-size:13px;padding:2px 6px}.estado{min-width:96px}td.nm{min-width:150px}}
+@media (max-width:1000px){
+ .layout{grid-template-columns:minmax(0,1fr);padding:12px}
+ .side{display:flex;overflow-x:auto;border-radius:8px;padding:0}
+ .side button{white-space:nowrap;padding:12px 14px;font-size:15px;width:auto}
+ .side hr,.side .sec{display:none}
+ .titles h1{font-size:26px}.brand{width:auto}.brand-name{font-size:30px}
+ .demo-flag{margin-left:0}
+ .filters{grid-template-columns:1fr 1fr}
+ .filters .ctl:first-child{grid-column:1/-1}
+ .gstrip,.steps,.dofa{grid-template-columns:minmax(0,1fr)}
+ .fields,.ficha-g{grid-template-columns:minmax(0,1fr)}
+ .det-top .btn-pill{margin-left:0;padding:0 34px}
+ .crit{grid-template-columns:1fr 44px 1fr 40px}
+ .tab{padding:10px 14px;font-size:15px}
+}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand" aria-label="CHEC Grupo EPM"><span class="brand-name">CHEC</span><span class="brand-sub">Grupo EPM</span></div>
+  <div class="titles">
+    <h1>StrateGo - Versión V. 1.0.0</h1>
+    <div class="user"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> USUARIO DEMO</div>
+  </div>
+  <div class="demo-flag"><svg class="gol-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 6c4 .5 7.5 2.6 9.8 5.9C12 8 15.8 5.3 23 4.6c-3.4 1.9-5.8 4.4-6.9 7.6l3.4 5.3-5.4-2.4c-2 2.3-5 3.6-8.6 3.8 2.2-1.3 3.4-3.2 3.6-5.4C7 11.1 4.3 8.2 1 6z"/></svg><div><b>Prototipo Golondrina</b><br><small>Datos de ejemplo para demostración</small></div></div>
+</header>
+<div class="layout">
+  <nav class="side" id="side" aria-label="Menú principal"></nav>
+  <main id="main"></main>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<style>
+.chat-fab{position:fixed;right:calc(20px + env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;align-items:center;gap:8px;background:var(--gol);color:#fff;border:0;border-radius:24px;padding:12px 18px;font-size:15px;font-weight:700;box-shadow:var(--shadow)}
+.chat-fab svg{fill:#fff}
+.chat{position:fixed;right:calc(20px + env(safe-area-inset-right,0px));bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:21;width:min(400px,calc(100vw - 24px));height:min(560px,calc(100vh - 140px));background:var(--panel);border:1px solid var(--gol);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.18);display:none;flex-direction:column;overflow:hidden}
+.chat.open{display:flex}
+.chat-h{background:var(--gol);color:#fff;padding:10px 14px;display:flex;align-items:center;gap:8px;font-weight:700}
+.chat-h svg{fill:#fff}
+.chat-h button{margin-left:auto;background:none;border:0;color:#fff;font-size:22px;line-height:1;padding:0 4px}
+.chat-log{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:88%;padding:8px 11px;border-radius:10px;white-space:pre-wrap;font-size:14px;line-height:1.45}
+.msg.u{align-self:flex-end;background:var(--gol);color:#fff}
+.msg.b{align-self:flex-start;background:var(--head);border:1px solid var(--line)}
+.msg.err{border-color:var(--bajo);color:var(--bajo)}
+.sugs{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 8px}
+.sug{border:1px solid var(--gol);color:var(--gol);background:var(--gol-bg);border-radius:14px;padding:4px 10px;font-size:13px;text-align:left}
+.chat-f{display:flex;gap:6px;border-top:1px solid var(--line);padding:10px}
+.chat-f input{flex:1;min-width:0;height:38px;border:1px solid var(--line2);border-radius:6px;padding:0 10px;background:var(--panel)}
+.chat-f button{height:38px;border:0;border-radius:6px;background:var(--gol);color:#fff;padding:0 14px;font-weight:700}
+.chat-f button:disabled{opacity:.5}
+@media print{.chat-fab,.chat{display:none!important}}
+</style>
+<button class="chat-fab" id="chat-fab" aria-expanded="false" aria-controls="chat"><svg class="gol-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 6c4 .5 7.5 2.6 9.8 5.9C12 8 15.8 5.3 23 4.6c-3.4 1.9-5.8 4.4-6.9 7.6l3.4 5.3-5.4-2.4c-2 2.3-5 3.6-8.6 3.8 2.2-1.3 3.4-3.2 3.6-5.4C7 11.1 4.3 8.2 1 6z"/></svg> Pregúntale a Golondrina</button>
+<section class="chat" id="chat" aria-label="Asistente Golondrina">
+  <div class="chat-h"><svg class="gol-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 6c4 .5 7.5 2.6 9.8 5.9C12 8 15.8 5.3 23 4.6c-3.4 1.9-5.8 4.4-6.9 7.6l3.4 5.3-5.4-2.4c-2 2.3-5 3.6-8.6 3.8 2.2-1.3 3.4-3.2 3.6-5.4C7 11.1 4.3 8.2 1 6z"/></svg> Asistente Golondrina <button id="chat-x" aria-label="Cerrar asistente">×</button></div>
+  <div class="chat-log" id="chat-log" aria-live="polite"><div class="msg b">Hola. Pregúntame por los proyectos, sus fuentes de financiación y cooperación, las alertas o cómo se calcula el índice.</div></div>
+  <div class="sugs" id="sugs">
+    <button class="sug">¿Qué proyecto tiene mayor viabilidad de financiación?</button>
+    <button class="sug">¿Quién podría financiar la conservación de cuencas?</button>
+    <button class="sug">¿Qué alertas afectan la línea de transmisión?</button>
+    <button class="sug">¿Cómo se calcula el índice de viabilidad?</button>
+  </div>
+  <form class="chat-f" id="chat-f"><input id="chat-in" placeholder="Escribe tu pregunta" aria-label="Pregunta" autocomplete="off"><button id="chat-send" type="submit">Enviar</button></form>
+</section>
+<script>
+const TEMAS = {
+  'geotermia':'geotermia','energias-renovables':'energías renovables','transicion-energetica':'transición energética',
+  'eficiencia-energetica':'eficiencia energética','transmision':'transmisión de energía','infraestructura':'infraestructura',
+  'mantenimiento':'mantenimiento de activos','digitalizacion':'digitalización de redes','cambio-climatico':'cambio climático',
+  'adaptacion':'adaptación climática','cuencas':'cuencas hidrográficas','agua':'recurso hídrico','biodiversidad':'biodiversidad',
+  'formacion-tecnica':'formación técnica','seguridad-industrial':'seguridad industrial','i+d':'investigación y desarrollo',
+  'innovacion':'innovación','auditoria':'auditoría','control-interno':'control interno','gestion-administrativa':'gestión administrativa',
+  'gestion-humana':'gestión humana','comunicaciones':'comunicaciones','reputacion':'reputación de marca'
+};
+const HOJA_RUTA = ['cambio-climatico','transicion-energetica','energias-renovables','agua','biodiversidad','adaptacion','innovacion'];
+const PILARES = ['Crecimiento y nuevos negocios','Excelencia operacional','Sostenibilidad y territorio','Gestión del talento','Gobierno corporativo'];
+const AREAS_REQ = ['ÁREA DE PLANEACIÓN','ÁREA FINANCIERA','ÁREA AMBIENTAL Y SOCIAL'];
+
+const PROYECTOS = [
+  {id:'p1',codigo:'GOL-PL-001',homologado:'DEMO2601',categoria:'Plan',estado:'Ejecución',negocio:'Habilitadora',area:'ÁREA DE SERVICIOS ADMINISTRATIVOS',roles:[6,4,7,5],
+   nombre:'Plan de gestión documental y archivo',programa:'PG-A Procesos de apoyo transversales',transversal:'Sí',
+   ubicacion:'Caldas y Risaralda',pilar:'Gobierno corporativo',real:false,
+   descripcion:'Organiza la conservación, consulta y digitalización de los documentos de la empresa.',
+   temas:['gestion-administrativa'],ods:[8],necesidad:{financiera:5,tecnica:10}},
+  {id:'p2',codigo:'GOL-PL-002',homologado:'DEMO2602',categoria:'Plan',estado:'Ejecución',negocio:'Habilitadora',area:'ÁREA DE TALENTO HUMANO',roles:[5,3,2,4],
+   nombre:'Plan de bienestar y clima laboral',programa:'PG-A Procesos de apoyo transversales',transversal:'Sí',
+   ubicacion:'Caldas y Risaralda',pilar:'Gestión del talento',real:false,
+   descripcion:'Promueve actividades de bienestar y mide el clima laboral de los equipos.',
+   temas:['gestion-humana'],ods:[8],necesidad:{financiera:5,tecnica:10}},
+  {id:'p3',codigo:'GOL-PL-003',homologado:'DEMO2603',categoria:'Plan',estado:'Ejecución',negocio:'Habilitadora',area:'ÁREA DE TALENTO HUMANO',roles:[7,5,4,6],
+   nombre:'Plan de prevención de riesgos eléctricos',programa:'PG-A Procesos de apoyo transversales',transversal:'Sí',
+   ubicacion:'Caldas y Risaralda',pilar:'Gestión del talento',real:false,
+   descripcion:'Previene accidentes en trabajos con tensión en redes, subestaciones y centrales.',
+   temas:['seguridad-industrial','formacion-tecnica','mantenimiento'],ods:[3,8],necesidad:{financiera:15,tecnica:75}},
+  {id:'p4',codigo:'GOL-PL-004',homologado:'DEMO2604',categoria:'Plan',estado:'Ejecución',negocio:'Habilitadora',area:'ÁREA DE RELACIONAMIENTO',roles:[3,3,2,5],
+   nombre:'Plan de relacionamiento con grupos de interés',programa:'PG-B Comunicación y relacionamiento',transversal:'No',
+   ubicacion:'Caldas y Risaralda',pilar:'Gobierno corporativo',real:false,
+   descripcion:'Define cómo la empresa informa y dialoga con comunidades, clientes y autoridades.',
+   temas:['comunicaciones','reputacion'],ods:[16],necesidad:{financiera:10,tecnica:15}},
+  {id:'p5',codigo:'GOL-PL-005',homologado:'DEMO2605',categoria:'Plan',estado:'Ejecución',negocio:'Habilitadora',area:'ÁREA DE CONTROL INTERNO',roles:[2,2,1,3],
+   nombre:'Plan de fortalecimiento del control interno',programa:'PG-C Aseguramiento',transversal:'No',
+   ubicacion:'Caldas y Risaralda',pilar:'Gobierno corporativo',real:false,
+   descripcion:'Actualiza la matriz de riesgos y los controles internos de los procesos.',
+   temas:['auditoria','control-interno'],ods:[16],necesidad:{financiera:5,tecnica:40}},
+  {id:'p6',codigo:'GOL-PY-006',homologado:'DEMO2606',categoria:'Proyecto',estado:'Formulación',negocio:'Generación',area:'ÁREA DE GENERACIÓN',roles:[3,2,2,4],
+   nombre:'Exploración de potencial geotérmico en zona volcánica',programa:'PG-D Diversificación de la generación',transversal:'No',
+   ubicacion:'Zona de alta montaña, Caldas',pilar:'Crecimiento y nuevos negocios',real:false,
+   descripcion:'Exploración del potencial de generación de energía geotérmica, incluida la capacitación de ingenieros en otros países y la evaluación de tecnologías.',
+   temas:['geotermia','energias-renovables','transicion-energetica','formacion-tecnica','i+d'],ods:[7,9,13],necesidad:{financiera:90,tecnica:95}},
+  {id:'p7',codigo:'GOL-PY-007',homologado:'DEMO2607',categoria:'Proyecto',estado:'Ejecución',negocio:'Transmisión y Distribución',area:'ÁREA DE REDES Y TERRITORIO',roles:[5,3,4,6],
+   nombre:'Construcción de línea de transmisión a 115 kV en la subregión Centro-Sur',programa:'PG-E Expansión de la red regional',transversal:'No',
+   ubicacion:'Centro-Sur de Caldas',pilar:'Crecimiento y nuevos negocios',real:false,
+   descripcion:'Instalación de una nueva línea de transmisión para mejorar la confiabilidad y la capacidad de conexión de la región.',
+   temas:['transmision','infraestructura','transicion-energetica'],ods:[7,9],necesidad:{financiera:85,tecnica:35}},
+  {id:'p8',codigo:'GOL-PL-008',homologado:'DEMO2608',categoria:'Plan',estado:'Ejecución',negocio:'Distribución',area:'ÁREA DE OPERACIÓN DEL SISTEMA',roles:[8,6,4,7],
+   nombre:'Plan de mantenimiento de subestaciones y redes de distribución',programa:'PG-F Confiabilidad de activos',transversal:'No',
+   ubicacion:'Caldas y Risaralda',pilar:'Excelencia operacional',real:false,
+   descripcion:'Revisión y mantenimiento de los equipos de energía para asegurar la continuidad y calidad del servicio.',
+   temas:['mantenimiento','digitalizacion','formacion-tecnica','infraestructura'],ods:[7,9],necesidad:{financiera:15,tecnica:80}},
+  {id:'p9',codigo:'GOL-PY-009',homologado:'DEMO2609',categoria:'Proyecto',estado:'Ejecución',negocio:'Sostenibilidad',area:'ÁREA AMBIENTAL Y SOCIAL',roles:[4,3,2,5],
+   nombre:'Conservación de cuencas abastecedoras de las centrales hidroeléctricas',programa:'PG-G Gestión ambiental del territorio',transversal:'No',
+   ubicacion:'Caldas y Risaralda',pilar:'Sostenibilidad y territorio',real:false,
+   descripcion:'Restauración y protección de las cuencas que abastecen la generación hidroeléctrica, con participación de las comunidades.',
+   temas:['cuencas','agua','adaptacion','cambio-climatico','biodiversidad'],ods:[6,13,15],necesidad:{financiera:80,tecnica:60}},
+  {id:'p10',codigo:'GOL-PY-010',homologado:'DEMO2610',categoria:'Proyecto',estado:'Formulación',negocio:'Distribución',area:'ÁREA DE CLIENTES Y CONEXIONES',roles:[3,3,2,4],
+   nombre:'Implementación de medición inteligente en zona urbana',programa:'PG-H Transformación digital de la red',transversal:'No',
+   ubicacion:'Manizales, Caldas',pilar:'Excelencia operacional',real:false,
+   descripcion:'Instalación de medidores inteligentes y plataforma de datos para gestionar la demanda y reducir pérdidas.',
+   temas:['digitalizacion','eficiencia-energetica','innovacion','transicion-energetica'],ods:[7,9,11],necesidad:{financiera:75,tecnica:65}}
+];
+
+const FUENTES = [
+  {id:'f1',nombre:'BID (Banco Interamericano de Desarrollo)',origen:'Multilateral',escala:'internacional',modalidad:'financiera',
+   temas:['transicion-energetica','energias-renovables','infraestructura','transmision','digitalizacion','cambio-climatico','eficiencia-energetica'],ods:[7,9,13],
+   cobertura:'latam',vigencia:'permanente',elegibilidad:'condicional',nota:'para empresas se canaliza por BID Invest; verificar requisitos para empresas de servicios públicos.',
+   ofrece:'Crédito y cooperación técnica no reembolsable para infraestructura y energía.'},
+  {id:'f2',nombre:'CAF (Banco de Desarrollo de América Latina y el Caribe)',origen:'Multilateral',escala:'internacional',modalidad:'financiera',
+   temas:['transicion-energetica','energias-renovables','transmision','infraestructura','agua','cambio-climatico'],ods:[6,7,9,13],
+   cobertura:'latam',vigencia:'permanente',elegibilidad:'si',nota:'',ofrece:'Crédito para infraestructura energética y proyectos de agua y clima.'},
+  {id:'f3',nombre:'Banco Mundial',origen:'Multilateral',escala:'internacional',modalidad:'mixta',
+   temas:['energias-renovables','geotermia','cambio-climatico','adaptacion','agua'],ods:[6,7,13],
+   cobertura:'global',vigencia:'permanente',elegibilidad:'condicional',nota:'la mayoría de operaciones se tramitan con el Gobierno nacional.',
+   ofrece:'Financiación y asistencia técnica en energía, agua y clima.'},
+  {id:'f4',nombre:'Fondo Verde para el Clima',origen:'Fondo climático multilateral',escala:'internacional',modalidad:'financiera',
+   temas:['cambio-climatico','adaptacion','energias-renovables','cuencas','biodiversidad'],ods:[7,13,15],
+   cobertura:'global',vigencia:'periodica',elegibilidad:'condicional',nota:'se accede a través de una entidad acreditada ante el fondo.',
+   ofrece:'Recursos para mitigación y adaptación al cambio climático.'},
+  {id:'f5',nombre:'AFD (Agencia Francesa de Desarrollo)',origen:'Francia',escala:'internacional',modalidad:'mixta',
+   temas:['transicion-energetica','cambio-climatico','agua','biodiversidad','eficiencia-energetica'],ods:[6,7,13,15],
+   cobertura:'colombia',vigencia:'verificar',elegibilidad:'condicional',nota:'verificar la línea vigente para empresas públicas y mixtas.',
+   ofrece:'Crédito y asistencia técnica en transición energética y clima.'},
+  {id:'f6',nombre:'FENOGE (Fondo de Energías No Convencionales y Gestión Eficiente de la Energía)',origen:'Colombia',escala:'nacional',modalidad:'financiera',
+   temas:['energias-renovables','geotermia','eficiencia-energetica','innovacion'],ods:[7,13],
+   cobertura:'colombia',vigencia:'periodica',elegibilidad:'si',nota:'',ofrece:'Financiación de proyectos de fuentes no convencionales y eficiencia energética.'},
+  {id:'f7',nombre:'Findeter',origen:'Colombia',escala:'nacional',modalidad:'financiera',
+   temas:['infraestructura','transmision','agua','digitalizacion','eficiencia-energetica'],ods:[6,7,9,11],
+   cobertura:'colombia',vigencia:'permanente',elegibilidad:'si',nota:'',ofrece:'Crédito de redescuento para infraestructura y servicios públicos.'},
+  {id:'f8',nombre:'Minciencias: convocatorias y beneficios tributarios en CTeI',origen:'Colombia',escala:'nacional',modalidad:'mixta',
+   temas:['i+d','innovacion','digitalizacion','energias-renovables'],ods:[9],
+   cobertura:'colombia',vigencia:'periodica',elegibilidad:'condicional',nota:'requiere un componente de investigación o innovación demostrable.',
+   ofrece:'Cofinanciación y beneficios tributarios para proyectos de ciencia, tecnología e innovación.'},
+  {id:'f9',nombre:'Sistema General de Regalías',origen:'Colombia',escala:'nacional',modalidad:'financiera',
+   temas:['infraestructura','agua','cuencas','cambio-climatico','i+d'],ods:[6,9,13],
+   cobertura:'region',vigencia:'periodica',elegibilidad:'condicional',nota:'se accede mediante alianza con la gobernación o los municipios.',
+   ofrece:'Recursos regionales para proyectos de impacto territorial.'},
+  {id:'f10',nombre:'Corpocaldas (autoridad ambiental regional)',origen:'Caldas',escala:'local',modalidad:'mixta',
+   temas:['cuencas','agua','biodiversidad','adaptacion'],ods:[6,13,15],
+   cobertura:'region',vigencia:'verificar',elegibilidad:'si',nota:'',ofrece:'Cofinanciación y acompañamiento técnico en conservación de cuencas.'},
+  {id:'f11',nombre:'GRÓ Geothermal Training Programme (Islandia, UNESCO)',origen:'Islandia',escala:'internacional',modalidad:'tecnica',
+   temas:['geotermia','formacion-tecnica','energias-renovables'],ods:[7,13],
+   cobertura:'global',vigencia:'periodica',elegibilidad:'si',nota:'',ofrece:'Formación especializada en exploración y aprovechamiento geotérmico.'},
+  {id:'f12',nombre:'JICA: programas de capacitación (Japón)',origen:'Japón',escala:'internacional',modalidad:'tecnica',
+   temas:['geotermia','formacion-tecnica','energias-renovables','mantenimiento','adaptacion'],ods:[7,9,13],
+   cobertura:'global',vigencia:'periodica',elegibilidad:'condicional',nota:'la postulación se tramita a través de APC-Colombia.',
+   ofrece:'Cursos técnicos en Japón y asistencia de expertos.'},
+  {id:'f13',nombre:'GIZ: asistencia técnica en energía y clima (Alemania)',origen:'Alemania',escala:'internacional',modalidad:'tecnica',
+   temas:['transicion-energetica','eficiencia-energetica','energias-renovables','digitalizacion','cambio-climatico'],ods:[7,13],
+   cobertura:'colombia',vigencia:'verificar',elegibilidad:'si',nota:'',ofrece:'Asesoría técnica y transferencia de conocimiento en transición energética.'},
+  {id:'f14',nombre:'KOICA: becas y capacitación (Corea)',origen:'Corea del Sur',escala:'internacional',modalidad:'tecnica',
+   temas:['formacion-tecnica','digitalizacion','innovacion','energias-renovables'],ods:[4,7,9],
+   cobertura:'global',vigencia:'periodica',elegibilidad:'condicional',nota:'la postulación se tramita a través de APC-Colombia.',
+   ofrece:'Becas y cursos cortos en tecnologías de redes e innovación.'},
+  {id:'f15',nombre:'IRENA: Alianza Global de Geotermia',origen:'Intergubernamental',escala:'internacional',modalidad:'tecnica',
+   temas:['geotermia','energias-renovables'],ods:[7,13],
+   cobertura:'global',vigencia:'permanente',elegibilidad:'si',nota:'',ofrece:'Redes de conocimiento, estudios y buenas prácticas en geotermia.'},
+  {id:'f16',nombre:'APC-Colombia: cooperación Sur-Sur',origen:'Colombia',escala:'nacional',modalidad:'tecnica',
+   temas:['cambio-climatico','energias-renovables','formacion-tecnica','adaptacion'],ods:[13,17],
+   cobertura:'colombia',vigencia:'periodica',elegibilidad:'si',nota:'',ofrece:'Intercambio de experiencias con países de la región.'},
+  {id:'f17',nombre:'SENA: formación técnica especializada',origen:'Colombia',escala:'nacional',modalidad:'tecnica',
+   temas:['formacion-tecnica','seguridad-industrial','mantenimiento','transmision'],ods:[4,8],
+   cobertura:'colombia',vigencia:'permanente',elegibilidad:'si',nota:'',ofrece:'Programas de formación a la medida para personal técnico.'},
+  {id:'f18',nombre:'Alianza con universidades de la región',origen:'Caldas y Risaralda',escala:'local',modalidad:'tecnica',
+   temas:['i+d','geotermia','innovacion','digitalizacion','cuencas'],ods:[4,9],
+   cobertura:'region',vigencia:'permanente',elegibilidad:'si',nota:'',ofrece:'Investigación aplicada, semilleros y pasantías.'},
+  {id:'f19',nombre:'ARL: asesoría en seguridad y salud en el trabajo',origen:'Colombia',escala:'nacional',modalidad:'tecnica',
+   temas:['seguridad-industrial','formacion-tecnica'],ods:[3,8],
+   cobertura:'colombia',vigencia:'permanente',elegibilidad:'si',nota:'',ofrece:'Asesoría, capacitación y programas de prevención.'},
+  {id:'f20',nombre:'Instituto de Auditores Internos de Colombia',origen:'Colombia',escala:'nacional',modalidad:'tecnica',
+   temas:['auditoria','control-interno'],ods:[16],
+   cobertura:'colombia',vigencia:'permanente',elegibilidad:'si',nota:'',ofrece:'Formación y certificación en auditoría interna.'}
+];
+
+const NOTAS = {
+  'p6|f11':'Programa de referencia en formación geotérmica; encaja con la necesidad de capacitar ingenieros de la CHEC en exploración, como en la cooperación previa del proyecto.',
+  'p6|f6':'La geotermia es una fuente no convencional y está dentro del foco del fondo.',
+  'p6|f15':'Da acceso a estudios y buenas prácticas de países con experiencia geotérmica.',
+  'p7|f2':'La banca de desarrollo regional financia la expansión de redes de transmisión.',
+  'p8|f17':'Formación práctica para las cuadrillas de mantenimiento de subestaciones y redes.',
+  'p3|f19':'La ARL es el aliado natural de un plan de prevención de riesgos laborales.',
+  'p9|f10':'La autoridad ambiental regional ya trabaja en las cuencas del territorio de la CHEC.',
+  'p9|f4':'La protección de cuencas abastecedoras es una medida de adaptación con cobeneficios en generación.'
+};
+
+const ALERTAS = [
+  {id:'a1',tipo:'amenaza',categoria:'Suministro',titulo:'Cierre del estrecho de Ormuz',
+   desc:'Una interrupción del tránsito marítimo por Ormuz elevaría el precio del petróleo y los fletes, y alargaría los plazos de importación de equipos eléctricos.',
+   impactos:[{pid:'p7',nivel:'alto',razon:'transformadores y conductores importados podrían retrasar el cronograma.'},
+             {pid:'p8',nivel:'medio',razon:'mayor costo y demora en repuestos importados.'},
+             {pid:'p10',nivel:'medio',razon:'los medidores inteligentes dependen de proveedores fuera del país.'}],
+   accion:'Adelantar las órdenes de compra críticas, evaluar proveedores de la región y buscar financiación puente para anticipar compras.',
+   enlaces:[{pid:'p7',tab:'financiacion',txt:'Ver financiación de la línea de transmisión'}]},
+  {id:'a2',tipo:'amenaza',categoria:'Mercado',titulo:'Plazos de entrega de transformadores más largos a nivel mundial',
+   desc:'La alta demanda global de transformadores de potencia está alargando los tiempos de fabricación y entrega.',
+   impactos:[{pid:'p7',nivel:'alto',razon:'la compra de transformadores podría superar un año.'},
+             {pid:'p8',nivel:'medio',razon:'reponer equipos fallados tomaría más tiempo.'}],
+   accion:'Extender la vida útil de los transformadores actuales con mantenimiento predictivo, apoyado en cooperación técnica.',
+   enlaces:[{pid:'p8',tab:'cooperacion',txt:'Ver cooperación técnica del plan de mantenimiento'}]},
+  {id:'a3',tipo:'amenaza',categoria:'Clima',titulo:'Pronóstico de fenómeno de El Niño',
+   desc:'Menores lluvias reducirían los caudales, la generación hidroeléctrica y la oferta de agua en las cuencas.',
+   impactos:[{pid:'p9',nivel:'alto',razon:'aumenta la urgencia de proteger las cuencas abastecedoras.'},
+             {pid:'p6',nivel:'medio',razon:'refuerza el caso para diversificar la generación con geotermia.'}],
+   accion:'Priorizar el proyecto de cuencas y buscar financiación climática para adaptación.',
+   enlaces:[{pid:'p9',tab:'financiacion',txt:'Ver financiación del proyecto de cuencas'}]},
+  {id:'a4',tipo:'oportunidad',categoria:'Convocatoria',titulo:'Nueva convocatoria nacional para energías no convencionales',
+   desc:'Se abre una convocatoria que financia proyectos de fuentes no convencionales y eficiencia energética.',
+   impactos:[{pid:'p6',nivel:'alto',razon:'la geotermia está dentro del alcance de la convocatoria.'},
+             {pid:'p10',nivel:'medio',razon:'la medición inteligente aporta a la eficiencia energética.'}],
+   accion:'Preparar la postulación del proyecto de geotermia antes del cierre.',
+   enlaces:[{pid:'p6',tab:'financiacion',txt:'Ver financiación del proyecto de geotermia'}]},
+  {id:'a5',tipo:'oportunidad',categoria:'Cooperación',titulo:'Apertura de cursos internacionales de formación en geotermia',
+   desc:'Programas internacionales abren cupos para profesionales de países con potencial geotérmico.',
+   impactos:[{pid:'p6',nivel:'alto',razon:'permite capacitar a los ingenieros del proyecto en exploración geotérmica.'}],
+   accion:'Postular ingenieros del área de generación a los cursos disponibles.',
+   enlaces:[{pid:'p6',tab:'cooperacion',txt:'Ver cooperación técnica del proyecto de geotermia'}]}
+];
+const W = {afinidad:30, ods:20, modalidad:20, territorio:15, vigencia:15};
+const CRIT = [['afinidad','Afinidad temática'],['ods','Hoja de ruta y ODS'],['modalidad','Coincidencia de modalidad'],['territorio','Alineación territorial'],['vigencia','Vigencia de la oportunidad']];
+const VIG = {abierta:{score:100,label:'Convocatoria abierta'},periodica:{score:70,label:'Convocatorias periódicas'},permanente:{score:85,label:'Ventanilla permanente'},verificar:{score:50,label:'Vigencia por verificar'}};
+const TERR = {region:'Caldas y Risaralda',colombia:'Colombia',latam:'América Latina',global:'Global'};
+const ESC = {local:'Local',nacional:'Nacional',internacional:'Internacional'};
+const MOD = {financiera:'Financiera',tecnica:'Técnica',mixta:'Mixta'};
+const NIVEL_TXT = {alto:'Alta',medio:'Media',bajo:'Baja',nulo:'Sin match'};
+const IMP_TXT = {alto:'Alto',medio:'Medio',bajo:'Bajo'};
+
+const I = {
+  gol:'<svg class="gol-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 6c4 .5 7.5 2.6 9.8 5.9C12 8 15.8 5.3 23 4.6c-3.4 1.9-5.8 4.4-6.9 7.6l3.4 5.3-5.4-2.4c-2 2.3-5 3.6-8.6 3.8 2.2-1.3 3.4-3.2 3.6-5.4C7 11.1 4.3 8.2 1 6z"/></svg>',
+  home:'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9H3z"/></svg>',
+  sol:'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16"/><path d="M3 9h18M9 9v11"/></svg>',
+  ppp:'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l4 2.3v4.6L12 12 8 9.9V5.3zM7 12l4 2.3v4.6L7 21l-4-2.1v-4.6zM17 12l4 2.3v4.6L17 21l-4-2.1v-4.6z"/></svg>',
+  rep:'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 17v-3M12 17v-6M15 17v-4"/></svg>',
+  bell:'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4z"/><path d="M10 21h4"/></svg>',
+  info:'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>',
+  back:'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12c3-6 7-6 8 0s5 6 8 0"/></svg>',
+  out:'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h9v18H5z"/><path d="M11 12h.5M14 7l5-2v16l-5-2"/></svg>',
+  box:'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v10l-8 4-8-4V7z"/><path d="M4 7l8 4 8-4M12 11v10"/></svg>',
+  open:'<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="15" cy="12" r="6"/><path d="M15 9v6M12 12h6M2 12h7"/></svg>'
+};
+
+const state = {
+  view:'banco', pid:null, tab:'general', escalaTab:'todas', abiertos:{}, alertFiltro:'todas',
+  f:{texto:'', tipo:'todos', estado:'activo', top:'10', pilar:'todos', ubic:'todas', escala:'todas', minimo:'0', orden:'codigo'},
+  val:{}
+};
+try { state.val = JSON.parse(localStorage.getItem('golondrina-validaciones') || '{}') || {}; } catch (e) { state.val = {}; }
+function guardarVal(){ try { localStorage.setItem('golondrina-validaciones', JSON.stringify(state.val)); } catch (e) {} }
+
+const byId = id => PROYECTOS.find(p => p.id === id);
+function terrScore(s){ return s.cobertura==='region' ? 100 : s.cobertura==='colombia' ? 90 : s.cobertura==='latam' ? 85 : 80; }
+function nivel(v){ return v>=70 ? 'alto' : v>=40 ? 'medio' : v>0 ? 'bajo' : 'nulo'; }
+function lista(arr){ return arr.length<2 ? (arr[0]||'') : arr.slice(0,-1).join(', ') + ' y ' + arr[arr.length-1]; }
+
+function evaluar(p, modo, escala){
+  const res = []; let sinAf = 0, total = 0;
+  for (const s of FUENTES){
+    if (!(s.modalidad===modo || s.modalidad==='mixta')) continue;
+    if (escala && escala!=='todas' && s.escala!==escala) continue;
+    total++;
+    const comunes = p.temas.filter(t => s.temas.includes(t));
+    if (!comunes.length){ sinAf++; continue; }
+    const odsC = p.ods.filter(o => s.ods.includes(o));
+    const prior = s.temas.some(t => HOJA_RUTA.includes(t));
+    const c = {
+      afinidad: Math.min(100, Math.round(comunes.length / Math.min(3, p.temas.length) * 100)),
+      ods: Math.min(100, Math.round(odsC.length / p.ods.length * 70) + (prior ? 30 : 0)),
+      modalidad: Math.round(p.necesidad[modo] * (s.modalidad===modo ? 1 : 0.85)),
+      territorio: terrScore(s),
+      vigencia: VIG[s.vigencia].score
+    };
+    const bruto = CRIT.reduce((a,[k]) => a + c[k]*W[k], 0) / 100;
+    const idx = s.elegibilidad==='condicional' ? bruto*0.85 : bruto;
+    res.push({s, c, comunes, odsC, prior, bruto:Math.round(bruto), indice:Math.round(idx), key:`${p.id}|${s.id}|${modo}`});
+  }
+  res.sort((a,b) => b.indice - a.indice);
+  return {res, sinAf, total};
+}
+function viab(p, modo, escala){
+  const r = evaluar(p, modo, escala).res.filter(m => state.val[m.key] !== 'descartada');
+  return r.length ? {v:r[0].indice, top:r[0].s} : {v:0, top:null};
+}
+function alertasDe(p){ return ALERTAS.filter(a => a.impactos.some(i => i.pid===p.id)); }
+
+function scaleHTML(v){ const n = nivel(v); return `<span class="scale" aria-hidden="true"><i class="bg-${n}" style="width:${v}%"></i><em style="left:40%"></em><em style="left:70%"></em></span>`; }
+function viaCell(v){ const n = nivel(v); return `<div class="via"><b class="t-${n}">${v ? v+'%' : '0%'}</b><span class="mini"><i class="bg-${n}" style="width:${v}%"></i></span><small class="t-${n}">${NIVEL_TXT[n]}</small></div>`; }
+function alertBadges(p){
+  const al = alertasDe(p); const am = al.filter(a=>a.tipo==='amenaza').length, op = al.length-am;
+  if (!al.length) return '<span class="muted">Ninguna</span>';
+  return (am ? `<span class="acnt am">${am} amenaza${am>1?'s':''}</span>` : '') + (op ? `<span class="acnt op">${op} oportunidad${op>1?'es':''}</span>` : '');
+}
+
+function renderSide(){
+  const n = ALERTAS.length;
+  const b = (view, icon, txt, extra='') => `<button class="${extra} ${state.view===view || (view==='banco' && state.view==='detalle') ? 'on' : ''}" data-action="nav" data-view="${view}">${icon} ${txt}</button>`;
+  const inert = (icon, txt) => `<button data-action="inerte">${icon} ${txt}</button>`;
+  document.getElementById('side').innerHTML =
+    inert(I.home,'Home') + inert(I.sol,'Solicitudes') + b('banco', I.ppp, 'Programas, Planes y Proyectos') + inert(I.rep,'Reportes') +
+    `<hr><div class="sec">${I.gol} Golondrina</div>` +
+    `<button class="gol ${state.view==='alertas'?'on':''}" data-action="nav" data-view="alertas">${I.bell} Alertas y señales <span class="count">${n}</span></button>` +
+    `<button class="gol ${state.view==='metodo'?'on':''}" data-action="nav" data-view="metodo">${I.info} Cómo se calcula</button><hr>` +
+    inert(I.back,'Regresar al portal') + inert(I.out,'Salir');
+}
+
+function crumbs(items){
+  return `<nav class="crumbs" aria-label="Ruta">` + items.map((it,i) => {
+    const last = i===items.length-1;
+    const sep = i ? '<span class="sep">/</span>' : '';
+    return sep + (last ? `<span class="cur">${it.icon||''} ${it.t}</span>` : `<button data-action="nav" data-view="${it.v}">${it.icon||''} ${it.t}</button>`);
+  }).join('') + `</nav>`;
+}
+
+function filtrados(){
+  const f = state.f;
+  let rows = PROYECTOS.filter(p => {
+    const txt = (p.codigo+' '+p.homologado+' '+p.nombre+' '+p.area+' '+p.negocio).toLowerCase();
+    if (f.texto && !txt.includes(f.texto.toLowerCase())) return false;
+    if (f.tipo==='planes' && p.categoria!=='Plan') return false;
+    if (f.tipo==='proyectos' && p.categoria!=='Proyecto') return false;
+    if (f.estado!=='activo' && p.estado!==f.estado) return false;
+    if (f.pilar!=='todos' && p.pilar!==f.pilar) return false;
+    if (f.ubic!=='todas' && p.ubicacion!==f.ubic) return false;
+    return true;
+  }).map(p => ({p, fin:viab(p,'financiera',f.escala).v, tec:viab(p,'tecnica',f.escala).v, al:alertasDe(p).length}));
+  const min = +f.minimo;
+  if (min) rows = rows.filter(r => Math.max(r.fin, r.tec) >= min);
+  if (f.orden==='fin') rows.sort((a,b)=>b.fin-a.fin);
+  if (f.orden==='tec') rows.sort((a,b)=>b.tec-a.tec);
+  if (f.orden==='alertas') rows.sort((a,b)=>b.al-a.al);
+  return rows.slice(0, +f.top);
+}
+
+function opt(val, txt, cur){ return `<option value="${val}" ${val===cur?'selected':''}>${txt}</option>`; }
+
+function renderBanco(){
+  const f = state.f;
+  const ubics = [...new Set(PROYECTOS.map(p=>p.ubicacion))];
+  const rows = filtrados();
+  return crumbs([{t:'Home',v:'banco',icon:I.home},{t:'Planes y Proyectos',v:'banco',icon:I.ppp},{t:'Banco Programas, Planes y Proyectos',icon:I.box}]) +
+  `<section class="panel"><div class="panel-head"><span class="qmark" aria-hidden="true">?</span> Banco Programas, Planes y Proyectos del Periodo "Plan de demostración 2027-2035"</div>
+  <div class="panel-body">
+    <div class="filters">
+      <input class="ctl" id="f-texto" placeholder="Filtro" aria-label="Filtro por texto" value="${f.texto.replace(/"/g,'&quot;')}">
+      <select class="ctl" data-f="tipo" aria-label="Tipo">${opt('todos','Planes y Proyectos',f.tipo)}${opt('planes','Planes',f.tipo)}${opt('proyectos','Proyectos',f.tipo)}</select>
+      <select class="ctl" data-f="estado" aria-label="Estado">${opt('activo','Activo',f.estado)}${opt('Ejecución','Ejecución',f.estado)}${opt('Formulación','Formulación',f.estado)}</select>
+      <select class="ctl" data-f="top" aria-label="Cantidad">${opt('10','Top 10',f.top)}${opt('5','Top 5',f.top)}</select>
+      <button class="btn-pill" data-action="filtrar">Filtrar</button>
+    </div>
+    <div class="gfilters">
+      <span class="gtitle">${I.gol} Filtros Golondrina</span>
+      <label>Pilar estratégico<select class="ctl" data-f="pilar">${opt('todos','Todos',f.pilar)}${PILARES.map(x=>opt(x,x,f.pilar)).join('')}</select></label>
+      <label>Ubicación<select class="ctl" data-f="ubic">${opt('todas','Todas',f.ubic)}${ubics.map(x=>opt(x,x,f.ubic)).join('')}</select></label>
+      <label>Escala de la fuente<select class="ctl" data-f="escala">${opt('todas','Todas',f.escala)}${opt('local','Local',f.escala)}${opt('nacional','Nacional',f.escala)}${opt('internacional','Internacional',f.escala)}</select></label>
+      <label>Viabilidad mínima<select class="ctl" data-f="minimo">${opt('0','Cualquiera',f.minimo)}${opt('40','Media o alta (40% o más)',f.minimo)}${opt('70','Alta (70% o más)',f.minimo)}</select></label>
+      <label>Ordenar por<select class="ctl" data-f="orden">${opt('codigo','Código',f.orden)}${opt('fin','Viabilidad de financiación',f.orden)}${opt('tec','Viabilidad de cooperación técnica',f.orden)}${opt('alertas','Número de alertas',f.orden)}</select></label>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Código<br>(Código<br>Homologado)</th><th>Categoría</th><th>Estado</th><th>Negocio /<br>Área</th><th class="col-roles">Roles</th><th>Nombre</th>
+      <th class="g"><span>${I.gol} Financiación</span></th><th class="g"><span>${I.gol} Coop. técnica</span></th><th class="g"><span>${I.gol} Alertas</span></th><th>Acciones</th></tr></thead>
+      <tbody>${rows.length ? rows.map(({p,fin,tec}) => `<tr>
+        <td><span class="code">${p.codigo}</span><br>${p.homologado?`(${p.homologado})`:''}</td>
+        <td>${p.categoria}</td>
+        <td><span class="estado ${p.estado==='Formulación'?'form':''}">${p.estado}</span></td>
+        <td>${p.negocio}<br>${p.area}</td>
+        <td class="col-roles"><div class="roles"><span class="badge b1">${p.roles[0]}</span><span class="badge b2">${p.roles[1]}</span><span class="badge b3">${p.roles[2]}</span><span class="badge b4">${p.roles[3]}</span></div></td>
+        <td class="nm"><button class="plink nm-link" data-action="open" data-pid="${p.id}">${p.nombre}</button></td>
+        <td>${viaCell(fin)}</td><td>${viaCell(tec)}</td><td>${alertBadges(p)}</td>
+        <td><button class="open-btn" data-action="open" data-pid="${p.id}" aria-label="Ver ${p.nombre}">${I.open}<span class="ver-t"> Ver</span></button></td>
+      </tr>`).join('') : `<tr><td colspan="10" class="empty">Ningún plan o proyecto cumple los filtros. Amplía la viabilidad mínima o cambia la escala de la fuente.</td></tr>`}</tbody>
+    </table></div>
+    <p class="note">Todos los planes, proyectos, códigos y áreas son ficticios y se usan solo para la demostración. Los porcentajes son un índice de afinidad para priorizar, no una probabilidad de obtener los recursos.</p>
+  </div></section>`;
+}
+
+const TABS = [['general','Información General'],['economica','Estrategia Económica'],['objetivos','Objetivos Estratégicos'],['alineacion','Alineación Estratégica'],['fechas','Fechas y Roles'],['metas','Metas'],['variables','Variables Financieras'],['cambios','Gestión de Cambios'],['financiacion','Financiación',1],['cooperacion','Cooperación Técnica',1],['alertas','Alertas',1]];
+
+function fichaHTML(p){
+  return `<div class="ficha"><div class="ficha-h">${I.gol} Ficha Golondrina <span class="muted">generada por IA a partir de la descripción registrada en StrateGo</span></div>
+  <div class="ficha-g">
+    <div><span class="lbl">Temas</span><div class="chips-s">${p.temas.map(t=>`<span class="chip-s">${TEMAS[t]}</span>`).join('')}</div></div>
+    <div><span class="lbl">ODS</span><div class="chips-s">${p.ods.map(o=>`<span class="chip-s ods">ODS ${o}</span>`).join('')}</div></div>
+    <div><span class="lbl">Necesidad estimada</span><div>Financiera: ${p.necesidad.financiera}/100<br>Técnica: ${p.necesidad.tecnica}/100</div></div>
+    <div><span class="lbl">Territorio</span><div>${p.ubicacion}</div></div>
+  </div></div>`;
+}
+
+function justificar(p, m, modo){
+  const partes = [`Coincide en ${lista(m.comunes.map(t=>TEMAS[t]))}.`];
+  if (m.odsC.length) partes.push(`Comparte ${lista(m.odsC.map(o=>'ODS '+o))}.`);
+  if (m.prior) partes.push('Sus líneas están entre los temas priorizados de la hoja de ruta de cooperación.');
+  partes.push(m.s.modalidad==='mixta' ? 'Ofrece apoyo técnico y financiero.' : (modo==='financiera' ? 'Ofrece apoyo financiero.' : 'Ofrece apoyo técnico: capacitación, asesoría o intercambio.'));
+  const esp = NOTAS[p.id+'|'+m.s.id];
+  return (esp ? esp+' ' : '') + partes.join(' ');
+}
+
+function matchHTML(p, m, modo){
+  const v = state.val[m.key];
+  const open = state.abiertos[m.key];
+  const n = nivel(m.indice);
+  return `<article class="match ${v==='relevante'?'rel':''} ${v==='descartada'?'desc':''}">
+    <div class="match-top">
+      <div class="match-name"><strong>${m.s.nombre}</strong>
+        <div class="tags"><span class="tag esc">${ESC[m.s.escala]}</span><span class="tag">${MOD[m.s.modalidad]}</span><span class="tag">Origen: ${m.s.origen}</span>${m.s.elegibilidad==='condicional'?'<span class="tag warn">Elegibilidad condicionada</span>':''}</div>
+        <div class="muted" style="margin-top:5px;font-size:14px">${m.s.ofrece}</div>
+      </div>
+      <div class="match-score"><b class="t-${n}">${m.indice}%</b> <span class="t-${n}">${NIVEL_TXT[n]}</span>${scaleHTML(m.indice)}</div>
+    </div>
+    <p class="just">${justificar(p,m,modo)}</p>
+    <div class="match-actions">
+      <button class="sbtn" data-action="toggle" data-key="${m.key}" aria-expanded="${open?'true':'false'}">${open?'Ocultar desglose':'Ver desglose del índice'}</button>
+      <button class="sbtn ${v==='relevante'?'on-rel':''}" data-action="val" data-key="${m.key}" data-v="relevante">${v==='relevante'?'Marcada como relevante':'Marcar como relevante'}</button>
+      <button class="sbtn ${v==='descartada'?'on-desc':''}" data-action="val" data-key="${m.key}" data-v="descartada">${v==='descartada'?'Descartada':'Descartar'}</button>
+      <span class="vig">${VIG[m.s.vigencia].label}. Verificar en el sitio oficial.</span>
+    </div>
+    ${open ? `<div class="desglose">${CRIT.map(([k,t]) => `<div class="crit"><span>${t}</span><span class="w">peso ${W[k]}%</span>${scaleHTML(m.c[k])}<b>${m.c[k]}</b></div>`).join('')}
+      <div class="crit-total">Puntaje ponderado: ${m.bruto}%${m.s.elegibilidad==='condicional' ? ` × 0,85 por elegibilidad condicionada (${m.s.nota}) = ${m.indice}%` : ''}. Cobertura de la fuente: ${TERR[m.s.cobertura]}.</div></div>` : ''}
+  </article>`;
+}
+
+function tabOportunidades(p, modo){
+  const {res, sinAf, total} = evaluar(p, modo, state.escalaTab);
+  const activos = res.filter(m => state.val[m.key] !== 'descartada');
+  const ordenados = [...activos, ...res.filter(m => state.val[m.key] === 'descartada')];
+  const best = activos[0];
+  const v = best ? best.indice : 0, n = nivel(v);
+  const tituloModo = modo==='financiera' ? 'Fuentes de financiación' : 'Oportunidades de cooperación técnica';
+  const chips = ['todas','local','nacional','internacional'].map(e => `<button class="chip" data-action="escala" data-escala="${e}" aria-pressed="${state.escalaTab===e}">${e==='todas'?'Todas':ESC[e]}</button>`).join('');
+  let cuerpo;
+  if (!res.length){
+    cuerpo = `<div class="empty">${state.escalaTab!=='todas' ? `No hay fuentes de escala ${ESC[state.escalaTab].toLowerCase()} con afinidad temática. Prueba con otra escala.` :
+      (modo==='financiera' ? `Golondrina no encontró fuentes de financiación con afinidad temática. Por su naturaleza, este ${p.categoria.toLowerCase()} no parece susceptible de financiación externa; revisa la pestaña Cooperación Técnica.` :
+      `Golondrina no encontró oportunidades de cooperación técnica con afinidad temática para este ${p.categoria.toLowerCase()}. Si conoces una fuente adecuada, agrégala al catálogo para que se evalúe.`)}</div>`;
+  } else {
+    cuerpo = ordenados.map(m => matchHTML(p, m, modo)).join('');
+  }
+  return `<div class="gtab-head"><div><h3>${tituloModo} para este ${p.categoria.toLowerCase()}</h3>
+    <p class="muted">Golondrina evaluó ${total} fuentes ${modo==='financiera'?'financieras o mixtas':'técnicas o mixtas'} del catálogo. Se muestran las que tienen afinidad temática, ordenadas por índice de viabilidad.</p></div>
+    <div class="chips" role="group" aria-label="Escala de la fuente">${chips}</div></div>
+  ${fichaHTML(p)}
+  <div class="best"><div><span class="lbl">Viabilidad de ${modo==='financiera'?'financiación':'cooperación técnica'}</span><span class="gcard-v t-${n}">${v}%</span></div>
+    <div>${scaleHTML(v)}<span class="gcard-s">${best ? 'Mejor match: '+best.s.nombre : 'Sin match relevante'}</span></div></div>
+  ${cuerpo}
+  <p class="note">${sinAf} fuente${sinAf===1?'':'s'} sin afinidad temática no se muestra${sinAf===1?'':'n'}. El índice es de afinidad y sirve para priorizar; no es la probabilidad de obtener los recursos. Tus validaciones (relevante o descartada) ajustan el índice del proyecto y alimentan la calibración de la rúbrica.</p>`;
+}
+
+function alertaHTML(a, pidFoco){
+  const impactos = pidFoco ? a.impactos.filter(i => i.pid===pidFoco) : a.impactos;
+  return `<article class="alert ${a.tipo==='oportunidad'?'op':''}">
+    <header><span class="atipo">${a.tipo==='amenaza'?'Amenaza':'Oportunidad'}</span><span class="acat">${a.categoria}</span><span class="afuente">Escenario de demostración</span></header>
+    <h4>${a.titulo}</h4><p>${a.desc}</p>
+    <div class="aimp">${impactos.map(i => { const p = byId(i.pid); const cls = a.tipo==='oportunidad' ? 't-alto' : (i.nivel==='alto'?'t-bajo':'t-medio');
+      return `<div class="aimp-row"><span class="lvl ${cls}">Impacto ${IMP_TXT[i.nivel].toLowerCase()}</span>${pidFoco ? '' : `<button class="plink" data-action="go" data-pid="${p.id}" data-tab="alertas">${p.nombre}</button>:`} <span>${pidFoco ? i.razon.charAt(0).toUpperCase()+i.razon.slice(1) : i.razon}</span></div>`; }).join('')}</div>
+    <div class="aacc"><b>Acción sugerida:</b> <span>${a.accion}</span>${a.enlaces.map(e => `<button class="sbtn" data-action="go" data-pid="${e.pid}" data-tab="${e.tab}">${e.txt}</button>`).join('')}</div>
+  </article>`;
+}
+
+function renderDetalle(){
+  const p = byId(state.pid);
+  const fin = viab(p,'financiera'), tec = viab(p,'tecnica');
+  const al = alertasDe(p); const am = al.filter(a=>a.tipo==='amenaza').length;
+  const card = (tab, label, v, sub) => { const n = nivel(v); return `<button class="gcard" data-action="tab" data-tab="${tab}"><span class="gcard-l">${I.gol} ${label}</span><span class="gcard-v t-${n}">${v}%</span>${scaleHTML(v)}<span class="gcard-s">${sub}</span></button>`; };
+  let body;
+  const t = state.tab;
+  if (t==='general'){
+    body = `<div class="fields">
+      <div class="field"><b>Tipo de Instrumento</b><div>${p.categoria}</div></div><div class="field"><b>Categoría</b><div>${p.categoria}</div></div>
+      <div class="field"><b>Transversal</b><div>${p.transversal}</div></div><div class="field"><b>Código Homologado</b><div>${p.homologado||'Sin código homologado'}</div></div>
+      <div class="field"><b>Área Formuladora</b><div>${p.area}</div></div><div class="field"><b>Áreas Requeridas</b><div>${AREAS_REQ.join('<br>')}</div></div>
+      <div class="field"><b>Descripción</b><div>${p.descripcion}</div></div><div class="field"><b>Ubicación</b><div>${p.ubicacion}</div></div>
+    </div>${fichaHTML(p)}`;
+  } else if (t==='alineacion'){
+    body = `<div class="fields"><div class="field"><b>Pilar estratégico</b><div>${p.pilar}</div></div><div class="field"><b>Programa asociado</b><div>${p.programa}</div></div></div>${fichaHTML(p)}`;
+  } else if (t==='financiacion'){ body = tabOportunidades(p,'financiera'); }
+  else if (t==='cooperacion'){ body = tabOportunidades(p,'tecnica'); }
+  else if (t==='alertas'){
+    body = `<h3>Señales que afectan este ${p.categoria.toLowerCase()}</h3><p class="muted" style="margin-top:0">Cada señal se cruza con la ficha del ${p.categoria.toLowerCase()} y se clasifica como amenaza u oportunidad para el DOFA.</p>` +
+      (al.length ? al.map(a => alertaHTML(a, p.id)).join('') : `<div class="empty">No hay señales activas que afecten este ${p.categoria.toLowerCase()}.</div>`);
+  } else {
+    body = `<div class="placeholder">Esta sección se mantiene igual que en StrateGo. El prototipo solo añade las pestañas de Golondrina.</div>`;
+  }
+  return crumbs([{t:'Home',v:'banco',icon:I.home},{t:'Planes y Proyectos',v:'banco',icon:I.ppp},{t:'Banco Programas, Planes y Proyectos',v:'banco',icon:I.box},{t:'Ver Programas, Plan o Proyecto',icon:I.box}]) +
+  `<section class="panel"><div class="panel-head">${p.categoria}</div><div class="panel-body">
+    <div class="det-top"><div><div class="det-code">${p.codigo}</div></div>
+      <div class="det-prog"><b>Programa asociado</b><span>${p.programa}</span></div>
+      <button class="btn-pill blue" data-action="inerte">Editar ${p.categoria}</button></div>
+    <p class="det-name">${p.nombre}</p>
+    <div class="gstrip">
+      ${card('financiacion','Viabilidad de financiación', fin.v, fin.top ? 'Mejor match: '+fin.top.nombre : 'Sin fuentes con afinidad')}
+      ${card('cooperacion','Viabilidad de cooperación técnica', tec.v, tec.top ? 'Mejor match: '+tec.top.nombre : 'Sin fuentes con afinidad')}
+      <button class="gcard" data-action="tab" data-tab="alertas"><span class="gcard-l">${I.gol} Alertas activas</span><span class="gcard-v ${am?'t-bajo':al.length?'t-alto':'t-nulo'}">${al.length}</span><span class="gcard-s">${al.length ? `${am} amenaza${am===1?'':'s'} y ${al.length-am} oportunidad${al.length-am===1?'':'es'}` : 'Sin señales que afecten este registro'}</span></button>
+    </div>
+    <div class="tabs" role="tablist">${TABS.map(([k,txt,g]) => `<button class="tab ${g?'g':''}" role="tab" aria-selected="${t===k}" data-action="tab" data-tab="${k}">${g?I.gol:''}${txt}</button>`).join('')}</div>
+    <div class="tab-body" role="tabpanel">${body}</div>
+  </div></section>`;
+}
+
+function renderAlertas(){
+  const f = state.alertFiltro;
+  const lst = ALERTAS.filter(a => f==='todas' || a.tipo===f);
+  const am = ALERTAS.filter(a=>a.tipo==='amenaza'), op = ALERTAS.filter(a=>a.tipo==='oportunidad');
+  return crumbs([{t:'Home',v:'banco',icon:I.home},{t:'Golondrina',v:'banco',icon:I.gol},{t:'Alertas y señales',icon:I.bell}]) +
+  `<section class="panel"><div class="panel-head">${I.gol} Alertas y señales del entorno</div><div class="panel-body">
+    <p class="muted" style="margin-top:0">Golondrina vigila señales nacionales e internacionales, las cruza con el banco de planes y proyectos y sugiere acciones. Estas señales son escenarios de demostración; en producción provendrían de un agente de búsqueda profunda sobre fuentes curadas.</p>
+    <div class="dofa">
+      <div><h4 class="t-alto">Oportunidades externas (DOFA)</h4><ul>${op.map(a=>`<li>${a.titulo}</li>`).join('')}</ul></div>
+      <div><h4 class="t-bajo">Amenazas externas (DOFA)</h4><ul>${am.map(a=>`<li>${a.titulo}</li>`).join('')}</ul></div>
+    </div>
+    <div class="chips" role="group" aria-label="Tipo de alerta" style="margin-bottom:14px">
+      ${[['todas','Todas'],['amenaza','Amenazas'],['oportunidad','Oportunidades']].map(([k,t]) => `<button class="chip" data-action="afiltro" data-f="${k}" aria-pressed="${f===k}">${t}</button>`).join('')}
+    </div>
+    ${lst.map(a => alertaHTML(a)).join('')}
+  </div></section>`;
+}
+
+function renderMetodo(){
+  return crumbs([{t:'Home',v:'banco',icon:I.home},{t:'Golondrina',v:'banco',icon:I.gol},{t:'Cómo se calcula',icon:I.info}]) +
+  `<section class="panel"><div class="panel-head">${I.gol} Cómo funciona Golondrina</div><div class="panel-body">
+    <div class="steps">
+      <div class="step"><span class="n">Paso 1</span><h4>Perfilar</h4>La IA lee cada plan o proyecto de StrateGo y construye su ficha: temas, ODS, pilar, territorio y necesidad técnica o financiera.</div>
+      <div class="step"><span class="n">Paso 2</span><h4>Buscar y analizar</h4>Un agente de búsqueda profunda revisa un catálogo curado de fuentes: cooperantes, bancos, fondos, convocatorias y reportes de tendencias.</div>
+      <div class="step"><span class="n">Paso 3</span><h4>Recomendar</h4>Cruza ambos, calcula el índice de viabilidad, justifica cada match y cita la fuente. El analista valida y la rúbrica se ajusta.</div>
+    </div>
+    <h3>Rúbrica del índice de viabilidad</h3>
+    <p class="muted" style="margin-top:0">Primero se aplican filtros duros: la fuente debe ofrecer la modalidad buscada y compartir al menos un tema con el proyecto. Luego se ponderan cinco criterios.</p>
+    <div class="cat-wrap"><table class="rubric"><thead><tr><th>Criterio</th><th>Peso</th><th>Cómo se mide</th></tr></thead><tbody>
+      <tr><td>Afinidad temática</td><td>30%</td><td>Temas del proyecto que coinciden con las líneas de la fuente.</td></tr>
+      <tr><td>Hoja de ruta y ODS</td><td>20%</td><td>ODS compartidos, más un bono si la fuente trabaja temas priorizados en la hoja de ruta de cooperación del país.</td></tr>
+      <tr><td>Coincidencia de modalidad</td><td>20%</td><td>Qué tanto necesita el proyecto ese tipo de apoyo (financiero o técnico). Las fuentes mixtas puntúan un poco menos.</td></tr>
+      <tr><td>Alineación territorial</td><td>15%</td><td>Cobertura de la fuente frente a la ubicación del proyecto; las fuentes regionales puntúan más.</td></tr>
+      <tr><td>Vigencia de la oportunidad</td><td>15%</td><td>Convocatoria abierta, ventanilla permanente, convocatorias periódicas o vigencia por verificar.</td></tr>
+    </tbody></table></div>
+    <p>Si la elegibilidad de la CHEC está condicionada (por ejemplo, requiere un aliado o una entidad acreditada), el índice se multiplica por 0,85 y se muestra la condición. La viabilidad del proyecto es la de su mejor match no descartado.</p>
+    <div class="sem"><span><i class="dot bg-alto"></i> Alta: 70% o más</span><span><i class="dot bg-medio"></i> Media: 40% a 69%</span><span><i class="dot bg-bajo"></i> Baja: menos de 40%</span><span><i class="dot bg-nulo"></i> Sin match</span></div>
+    <div class="disclaimer">El porcentaje es un índice de afinidad para priorizar esfuerzos, no la probabilidad de obtener los recursos. Los pesos son una propuesta inicial para validar con el equipo de Estrategia y Planeación y se calibran con los casos de match que ya se hicieron manualmente.</div>
+    <h3 style="margin-top:22px">Catálogo de fuentes de la demostración</h3>
+    <p class="muted" style="margin-top:0">Entidades reales usadas como ejemplo; las líneas temáticas son aproximadas y se deben verificar en cada sitio oficial.</p>
+    <div class="cat-wrap"><table class="rubric cat"><thead><tr><th>Fuente</th><th>Escala</th><th>Modalidad</th><th>Vigencia</th><th>Elegibilidad</th></tr></thead><tbody>
+      ${FUENTES.map(s => `<tr><td>${s.nombre}</td><td>${ESC[s.escala]}</td><td>${MOD[s.modalidad]}</td><td>${VIG[s.vigencia].label}</td><td>${s.elegibilidad==='si'?'Directa':'Condicionada: '+s.nota}</td></tr>`).join('')}
+    </tbody></table></div>
+  </div></section>`;
+}
+
+function render(){
+  renderSide();
+  const main = document.getElementById('main');
+  main.innerHTML = state.view==='detalle' ? renderDetalle() : state.view==='alertas' ? renderAlertas() : state.view==='metodo' ? renderMetodo() : renderBanco();
+}
+
+let toastT;
+function toast(msg){ const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(()=>el.classList.remove('show'), 2400); }
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-action]'); if (!b) return;
+  const a = b.dataset.action;
+  if (a==='nav'){ state.view = b.dataset.view; render(); window.scrollTo(0,0); }
+  else if (a==='inerte'){ toast('Fuera del alcance del prototipo: esta opción funciona igual que en StrateGo.'); }
+  else if (a==='open'){ state.view='detalle'; state.pid=b.dataset.pid; state.tab='general'; state.escalaTab='todas'; render(); window.scrollTo(0,0); }
+  else if (a==='go'){ state.view='detalle'; state.pid=b.dataset.pid; state.tab=b.dataset.tab; state.escalaTab='todas'; render(); window.scrollTo(0,0); }
+  else if (a==='tab'){ state.tab=b.dataset.tab; render(); }
+  else if (a==='escala'){ state.escalaTab=b.dataset.escala; render(); }
+  else if (a==='toggle'){ state.abiertos[b.dataset.key] = !state.abiertos[b.dataset.key]; render(); }
+  else if (a==='val'){
+    const k = b.dataset.key, v = b.dataset.v;
+    if (state.val[k]===v) delete state.val[k]; else state.val[k] = v;
+    guardarVal(); render();
+    toast(state.val[k]==='relevante' ? 'Marcada como relevante.' : state.val[k]==='descartada' ? 'Fuente descartada; el índice del proyecto se recalculó.' : 'Validación retirada.');
+  }
+  else if (a==='afiltro'){ state.alertFiltro=b.dataset.f; render(); }
+  else if (a==='filtrar'){ const i = document.getElementById('f-texto'); state.f.texto = i ? i.value.trim() : ''; render(); }
+});
+document.addEventListener('change', e => {
+  const s = e.target.closest('[data-f]'); if (!s || s.tagName!=='SELECT') return;
+  state.f[s.dataset.f] = s.value; const i = document.getElementById('f-texto'); if (i) state.f.texto = i.value.trim(); render();
+});
+document.addEventListener('keydown', e => {
+  if (e.key==='Enter' && e.target.id==='f-texto'){ state.f.texto = e.target.value.trim(); render(); const i = document.getElementById('f-texto'); if (i){ i.focus(); i.setSelectionRange(i.value.length, i.value.length); } }
+});
+render();
+(function(){
+  const fab=document.getElementById('chat-fab'), box=document.getElementById('chat'), log=document.getElementById('chat-log');
+  const form=document.getElementById('chat-f'), inp=document.getElementById('chat-in'), send=document.getElementById('chat-send');
+  const hist=[]; let busy=false, samplePromise=null;
+  function getSample(){ if(!samplePromise) samplePromise = (window.claude && window.claude.use) ? window.claude.use('sample').catch(()=>null) : Promise.resolve(null); return samplePromise; }
+  getSample();
+  function toggle(open){ box.classList.toggle('open',open); fab.setAttribute('aria-expanded',open); if(open) inp.focus(); }
+  fab.addEventListener('click',()=>toggle(!box.classList.contains('open')));
+  document.getElementById('chat-x').addEventListener('click',()=>toggle(false));
+  document.getElementById('sugs').addEventListener('click',e=>{ const b=e.target.closest('.sug'); if(b && !busy){ inp.value=b.textContent; form.requestSubmit(); } });
+  function add(cls,txt){ const d=document.createElement('div'); d.className='msg '+cls; d.textContent=txt; log.appendChild(d); log.scrollTop=log.scrollHeight; return d; }
+
+  function contexto(){
+    const L=[];
+    L.push('SOLUCIÓN: Golondrina es un prototipo integrado a StrateGo, el banco de programas, planes y proyectos de la CHEC (Grupo EPM), para el equipo de Estrategia y Planeación. Recomienda fuentes de financiación y de cooperación técnica (local, nacional e internacional) para cada plan o proyecto, y genera alertas (amenazas u oportunidades para el DOFA) a partir de señales del entorno. Funciona en 3 pasos: 1) Perfilar: la IA lee cada plan o proyecto y genera su ficha (temas, ODS, necesidad financiera y técnica, territorio). 2) Buscar y analizar: un agente de búsqueda profunda (por ejemplo Bing o Copilot Researcher) revisa un catálogo curado de fuentes. 3) Recomendar: calcula el índice de viabilidad, justifica cada match y cita la fuente; el analista marca cada fuente como relevante o la descarta. El nombre viene de la golondrina, ave migratoria que conecta territorios.');
+    L.push('ÍNDICE DE VIABILIDAD: filtros duros (la fuente debe ofrecer la modalidad buscada y compartir al menos un tema). Pesos: afinidad temática 30%, hoja de ruta de cooperación y ODS 20%, coincidencia de modalidad 20%, alineación territorial 15%, vigencia de la oportunidad 15%. Si la elegibilidad de la CHEC está condicionada se multiplica por 0,85. La viabilidad del proyecto es la de su mejor fuente no descartada. Semáforo: alta 70% o más, media 40-69%, baja menos de 40%. Es un índice de afinidad para priorizar, no la probabilidad de obtener recursos; los pesos son una propuesta para validar con la CHEC.');
+    L.push('ADVERTENCIAS: todos los planes, proyectos, códigos y áreas son ficticios; las alertas son escenarios de demostración; las entidades son reales pero sus líneas temáticas son aproximadas y hay que verificar vigencia en sus sitios oficiales. En el prototipo las fichas y señales están precargadas; el índice se calcula en vivo.');
+    L.push('PLANES Y PROYECTOS:');
+    for(const p of PROYECTOS){
+      const top=(modo)=>{ const r=evaluar(p,modo).res.filter(m=>state.val[m.key]!=='descartada'); return r.length ? r.slice(0,4).map(m=>`${m.s.nombre} ${m.indice}%`).join('; ') : 'sin fuentes con afinidad'; };
+      const al=alertasDe(p).map(a=>a.titulo).join('; ')||'ninguna';
+      L.push(`- ${p.codigo} (ficticio) | ${p.categoria} | ${p.nombre} | estado ${p.estado} | ${p.negocio} / ${p.area} | ubicación ${p.ubicacion} | pilar ${p.pilar} | temas: ${p.temas.map(t=>TEMAS[t]).join(', ')} | ODS ${p.ods.join(', ')} | Viabilidad financiación ${viab(p,'financiera').v}% (${top('financiera')}) | Viabilidad cooperación técnica ${viab(p,'tecnica').v}% (${top('tecnica')}) | Alertas: ${al}`);
+    }
+    L.push('ALERTAS:');
+    for(const a of ALERTAS){ L.push(`- ${a.tipo.toUpperCase()} (${a.categoria}): ${a.titulo}. ${a.desc} Impactos: ${a.impactos.map(i=>`${byId(i.pid).nombre}: ${i.nivel}, ${i.razon}`).join(' / ')}. Acción sugerida: ${a.accion}`); }
+    L.push('CATÁLOGO DE FUENTES:');
+    for(const s of FUENTES){ L.push(`- ${s.nombre} | ${ESC[s.escala]} | ${MOD[s.modalidad]} | temas: ${s.temas.map(t=>TEMAS[t]).join(', ')} | ${VIG[s.vigencia].label} | elegibilidad ${s.elegibilidad==='si'?'directa':'condicionada: '+s.nota} | ${s.ofrece}`); }
+    return L.join('\n');
+  }
+  function turnos(q){
+    const intro='Eres el asistente de Golondrina dentro de StrateGo (CHEC). Responde en español, claro y breve (máximo 120 palabras salvo que pidan detalle), en texto plano sin markdown. Usa solo los datos de abajo; si algo no está, dilo y sugiere verificarlo. No inventes entidades, montos ni fechas. Si es relevante, aclara que un dato es de ejemplo o simulado.\n\nDATOS DE LA PÁGINA:\n'+contexto()+'\n\nPREGUNTA: ';
+    const recientes=hist.slice(-8);
+    const t=recientes.map((h,i)=>({role:h.role, content: i===0 && h.role==='user' ? intro+h.content : h.content}));
+    t.push({role:'user', content: t.length ? q : intro+q});
+    return t;
+  }
+  form.addEventListener('submit', async e=>{
+    e.preventDefault();
+    const q=inp.value.trim(); if(!q || busy) return;
+    inp.value=''; document.getElementById('sugs').style.display='none'; add('u',q);
+    const out=add('b','Pensando...');
+    busy=true; send.disabled=true;
+    const sample=await getSample();
+    try{
+      const input=turnos(q);
+      let r;
+      if(sample){
+        r=await sample(input,{modelTier:'quick',cache:false,onText:({text})=>{ out.textContent=text; log.scrollTop=log.scrollHeight; }});
+      } else {
+        const resp=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:input})});
+        const data=await resp.json().catch(()=>({}));
+        if(!resp.ok || typeof data.text!=='string') throw {code:data.code||'server'};
+        r={text:data.text};
+      }
+      out.textContent=r.text;
+      if(hist.length && hist[hist.length-1].role==='user') hist.pop();
+      hist.push({role:'user',content:q},{role:'assistant',content:r.text});
+    }catch(err){
+      const code=err&&err.code;
+      out.classList.add('err');
+      out.textContent = code==='no_key' ? 'El asistente no está configurado en este servidor: falta la variable ANTHROPIC_API_KEY.'
+        : code==='too_long' ? 'La conversación es muy larga. Recarga la página para empezar de nuevo.'
+        : code==='not_granted' ? 'Para usar el asistente hay que permitirlo en el aviso de claude.ai. Recarga la página si quieres intentarlo de nuevo.'
+        : code==='rate_limited' ? 'Llegaron muchas preguntas seguidas. Espera unos segundos y vuelve a preguntar.'
+        : (err&&err.text ? err.text+'\n\n(La respuesta se interrumpió.)' : 'No se pudo obtener respuesta. Revisa la conexión y vuelve a preguntar.');
+    }finally{ busy=false; send.disabled=false; inp.focus(); }
+  });
+})();
+</script>
+</body></html>
